@@ -1,6 +1,10 @@
+using System.Collections.Generic;
+using System.Linq;
 using Authentication.App.Challenge.Repositories.Database;
+using Authentication.App.Challenge.Web.Handlers;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -29,10 +33,16 @@ namespace Authentication.App.Challenge.Web
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
+            services.AddAuthentication(x =>
+            {
+                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddScheme<JwtAuthenticationOptions, JwtAuthenticationHandler>(JwtBearerDefaults.AuthenticationScheme, null);
 
             services.AddSpaStaticFiles(configuration => { configuration.RootPath = "ClientApp/build"; });
             
             services.AddSwaggerGen(c =>
+            {
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Version = "v1",
@@ -43,8 +53,36 @@ namespace Authentication.App.Challenge.Web
                         Name = "Yoann TERUEL",
                         Email = "yoann.teruel@gmail.com"
                     }
-                })
-            );
+                });
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
+                      Enter 'Bearer' [space] and then your token in the text input below.
+                      \r\n\r\nExample: 'Bearer 12345abcdef'",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer"
+                });
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement()
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            },
+                            Scheme = "oauth2",
+                            Name = "Bearer",
+                            In = ParameterLocation.Header,
+
+                        },
+                        new List<string>()
+                    }
+                });
+            });
         }
         
         public void ConfigureContainer(ContainerBuilder builder)

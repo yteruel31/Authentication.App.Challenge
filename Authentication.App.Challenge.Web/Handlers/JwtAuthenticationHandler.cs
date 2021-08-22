@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Security.Principal;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using Authentication.App.Challenge.Repositories.Database.Redis;
 using Authentication.App.Challenge.Services.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -19,11 +20,13 @@ namespace Authentication.App.Challenge.Web.Handlers
     public class JwtAuthenticationHandler : AuthenticationHandler<JwtAuthenticationOptions>
     {
         private readonly IAuthService _authService;
+        private readonly IRedisRepository _redisRepository;
 
         public JwtAuthenticationHandler(IOptionsMonitor<JwtAuthenticationOptions> options, ILoggerFactory logger,
-            UrlEncoder encoder, ISystemClock clock, IAuthService authService) : base(options, logger, encoder, clock)
+            UrlEncoder encoder, ISystemClock clock, IAuthService authService, IRedisRepository redisRepository) : base(options, logger, encoder, clock)
         {
             _authService = authService;
+            _redisRepository = redisRepository;
         }
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -63,8 +66,8 @@ namespace Authentication.App.Challenge.Web.Handlers
         private AuthenticateResult ValidateToken(string token)
         {
             AuthService.Payload payload = _authService.Decode(token);
-
-            if (payload == null)
+            
+            if (payload == null || _redisRepository.Database.StringGet(token).HasValue)
             {
                 return AuthenticateResult.Fail("Unauthorized");
             }
