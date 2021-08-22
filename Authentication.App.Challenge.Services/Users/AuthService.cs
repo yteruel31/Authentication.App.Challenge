@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Authentication.App.Challenge.Repositories.Database;
 using Authentication.App.Challenge.Repositories.Database.Dtos;
+using Authentication.App.Challenge.Repositories.Database.Redis;
 using Authentication.App.Challenge.Utils;
 using JWT.Algorithms;
 using JWT.Builder;
@@ -14,31 +15,61 @@ namespace Authentication.App.Challenge.Services.Users
     public class AuthService : IAuthService
     {
         private readonly CoreContext _coreContext;
+        private readonly IRedisRepository _redisRepository;
 
-        public AuthService(CoreContext coreContext)
+        public AuthService(CoreContext coreContext, 
+            IRedisRepository redisRepository)
         {
             _coreContext = coreContext;
+            _redisRepository = redisRepository;
         }
 
-        public async Task<string> Login(string email, string password)
+        public async Task<ResultBase> Login(string email, string password)
         {
             UserDto user = await _coreContext.Users.FirstOrDefaultAsync(u => u.Email == email);
             bool isPasswordMatched = EncryptHelper.VerifyPassword(password, user.Salt, user.Password);
-            
-            if (isPasswordMatched)
+
+            if (!isPasswordMatched)
             {
-                return Encode(new Dictionary<string, object>()
+                return new ResultContent<Error>
                 {
-                    {"id", user.Id},
-                    {"email", user.Email},
-                    {"exp", DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds()}
-                });
+                    Result = new Error
+                    {
+                        Message = "Password not matched"
+                    }
+                };
+            }
+            
+            long expire = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds();
+            string token = Encode(new Dictionary<string, object>()
+            {
+                {"id", user.Id},
+                {"email", user.Email},
+                {"exp", expire}
+            });
+
+            if (_redisRepository.Database.SetContains(user.Id.ToString(), token))
+            {
+                return new ResultContent<Error>
+                {
+                    Result = new Error
+                    {
+                        Message = "Token is blacklisted"
+                    }
+                };
             }
 
-            return string.Empty;
+            return new ResultContent<AuthSuccess>
+            {
+                Result = new AuthSuccess
+                {
+                    Token = token,
+                    Expire = expire
+                }
+            };
         }
 
-        public async Task<string> Register(string email, string password)
+        public async Task<ResultBase> Register(string email, string password)
         {
             EncryptHelper.HashSalt hashSalt = EncryptHelper.EncryptPassword(password);
             
@@ -49,14 +80,36 @@ namespace Authentication.App.Challenge.Services.Users
                 Salt = hashSalt.Salt,
                 CreatedAt = DateTime.Now
             });
-            await _coreContext.SaveChangesAsync();
             
-            return Encode(new Dictionary<string, object>()
+            await _coreContext.SaveChangesAsync();
+
+            long expire = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds();
+            string token = Encode(new Dictionary<string, object>()
             {
                 {"id", result.Entity.Id},
                 {"email", result.Entity.Email},
-                {"exp", DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds()}
+                {"exp", expire}
             });
+            
+            if (_redisRepository.Database.SetContains(result.Entity.Id.ToString(), token))
+            {
+                return new ResultContent<Error>
+                {
+                    Result = new Error
+                    {
+                        Message = "Token is blacklisted"
+                    }
+                };
+            }
+
+            return new ResultContent<AuthSuccess>
+            {
+                Result = new AuthSuccess
+                {
+                    Token = token,
+                    Expire = expire
+                }
+            };
         }
 
         private string Encode(Dictionary<string, object> payload)
@@ -90,11 +143,18 @@ namespace Authentication.App.Challenge.Services.Users
         }
     }
 
+    public class AuthSuccess : ResultContentBase
+    {
+        public string Token { get; set; }
+        
+        public long Expire { get; set; }
+    }
+
     public interface IAuthService
     {
-        Task<string> Login(string email, string password);
+        Task<ResultBase> Login(string email, string password);
         
-        Task<string> Register(string email, string password);
+        Task<ResultBase> Register(string email, string password);
         
         AuthService.Payload Decode(string token);
     }

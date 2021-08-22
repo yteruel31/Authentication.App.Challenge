@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Authentication.App.Challenge.Models.Auth;
 using Authentication.App.Challenge.Services.Users;
+using Authentication.App.Challenge.Utils;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Authentication.App.Challenge.Web.Controllers
@@ -24,14 +25,14 @@ namespace Authentication.App.Challenge.Web.Controllers
                 return BadRequest();
             }
             
-            string token = await _authService.Login(credentials.Email, credentials.Password);
+            ResultBase result = await _authService.Login(credentials.Email, credentials.Password);
 
-            if (string.IsNullOrEmpty(token))
+            if (result is ResultContent<Error> error)
             {
-                return Unauthorized();
+                return Unauthorized(error);
             }
-
-            return Ok(token);
+            
+            return Ok(result);
         }
         
         [HttpPost("register")]
@@ -42,14 +43,14 @@ namespace Authentication.App.Challenge.Web.Controllers
                 return BadRequest();
             }
             
-            string token = await _authService.Register(credentials.Email, credentials.Password);
+            ResultBase result = await _authService.Register(credentials.Email, credentials.Password);
 
-            if (string.IsNullOrEmpty(token))
+            if (result is ResultContent<Error> error)
             {
-                return Unauthorized();
+                return Unauthorized(error);
             }
-
-            return Ok(token);
+            
+            return Ok(result);
         }
     }
 }

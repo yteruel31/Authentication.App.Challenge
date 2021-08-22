@@ -25,7 +25,8 @@
         "DB_DATABASE": "authapp",
         "DB_USERNAME": "yoann",
         "DB_PASSWORD": "password",
-        "SECRET": "monsecret"
+        "SECRET": "monsecret",
+        "REDIS_SERVER": "localhost:6379"
       }
     }
   }
