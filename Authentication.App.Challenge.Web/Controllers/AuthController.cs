@@ -2,6 +2,8 @@
 using Authentication.App.Challenge.Models.Auth;
 using Authentication.App.Challenge.Services.Users;
 using Authentication.App.Challenge.Utils;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Authentication.App.Challenge.Web.Controllers
@@ -48,6 +50,23 @@ namespace Authentication.App.Challenge.Web.Controllers
             if (result is ResultContent<Error> error)
             {
                 return Unauthorized(error);
+            }
+            
+            return Ok(result);
+        }
+        
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            string headerAuthenticationValue = Request.Headers["Authorization"];
+            string token = headerAuthenticationValue[JwtBearerDefaults.AuthenticationScheme.Length..].Trim();
+
+            ResultBase result = await _authService.Logout(token);
+
+            if (result is ResultContent<Error> error)
+            {
+                return StatusCode(500, error);
             }
             
             return Ok(result);

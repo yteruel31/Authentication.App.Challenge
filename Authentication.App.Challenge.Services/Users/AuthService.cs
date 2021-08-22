@@ -41,14 +41,14 @@ namespace Authentication.App.Challenge.Services.Users
             }
             
             long expire = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds();
-            string token = Encode(new Dictionary<string, object>()
+            string token = Encode(new Dictionary<string, object>
             {
                 {"id", user.Id},
                 {"email", user.Email},
                 {"exp", expire}
             });
 
-            if (_redisRepository.Database.SetContains(user.Id.ToString(), token))
+            if (_redisRepository.Database.SetContains(token, user.Id))
             {
                 return new ResultContent<Error>
                 {
@@ -59,9 +59,9 @@ namespace Authentication.App.Challenge.Services.Users
                 };
             }
 
-            return new ResultContent<AuthSuccess>
+            return new ResultContent<AuthTokenSuccess>
             {
-                Result = new AuthSuccess
+                Result = new AuthTokenSuccess
                 {
                     Token = token,
                     Expire = expire
@@ -72,7 +72,7 @@ namespace Authentication.App.Challenge.Services.Users
         public async Task<ResultBase> Register(string email, string password)
         {
             EncryptHelper.HashSalt hashSalt = EncryptHelper.EncryptPassword(password);
-            
+
             var result = await _coreContext.Users.AddAsync(new UserDto
             {
                 Email = email,
@@ -80,18 +80,18 @@ namespace Authentication.App.Challenge.Services.Users
                 Salt = hashSalt.Salt,
                 CreatedAt = DateTime.Now
             });
-            
+
             await _coreContext.SaveChangesAsync();
 
             long expire = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds();
-            string token = Encode(new Dictionary<string, object>()
+            string token = Encode(new Dictionary<string, object>
             {
-                {"id", result.Entity.Id},
-                {"email", result.Entity.Email},
-                {"exp", expire}
+                { "id", result.Entity.Id },
+                { "email", result.Entity.Email },
+                { "exp", expire }
             });
-            
-            if (_redisRepository.Database.SetContains(result.Entity.Id.ToString(), token))
+
+            if (_redisRepository.Database.SetContains(token, result.Entity.Id))
             {
                 return new ResultContent<Error>
                 {
@@ -102,25 +102,41 @@ namespace Authentication.App.Challenge.Services.Users
                 };
             }
 
-            return new ResultContent<AuthSuccess>
+            return new ResultContent<AuthTokenSuccess>
             {
-                Result = new AuthSuccess
+                Result = new AuthTokenSuccess
                 {
                     Token = token,
                     Expire = expire
                 }
             };
         }
-
-        private string Encode(Dictionary<string, object> payload)
-        {
-            return JwtBuilder.Create()
-                .WithAlgorithm(new HMACSHA256Algorithm())
-                .WithSecret(Environment.GetEnvironmentVariable("SECRET"))
-                .AddClaims(payload)
-                .Encode();
-        }
         
+        public async Task<ResultBase> Logout(string token)
+        {
+            Payload payload = Decode(token);
+            TimeSpan timeSpan = (DateTimeOffset.FromUnixTimeSeconds(payload.Exp) - DateTime.UtcNow).Duration();
+            
+            if (await _redisRepository.Database.StringSetAsync(token, payload.Id, timeSpan))
+            {
+                return new ResultContent<Info>
+                {
+                    Result = new Info
+                    {
+                        Message = "Logout successfully"
+                    }
+                };
+            }
+            
+            return new ResultContent<Error>
+            {
+                Result = new Error
+                {
+                    Message = ""
+                }
+            };
+        }
+
         public Payload Decode(string token)
         {
             return JsonConvert.DeserializeObject<Payload>(JwtBuilder.Create()
@@ -130,6 +146,15 @@ namespace Authentication.App.Challenge.Services.Users
                 .Decode(token));
         }
         
+        private string Encode(Dictionary<string, object> payload)
+        {
+            return JwtBuilder.Create()
+                .WithAlgorithm(new HMACSHA256Algorithm())
+                .WithSecret(Environment.GetEnvironmentVariable("SECRET"))
+                .AddClaims(payload)
+                .Encode();
+        }
+
         public class Payload
         {
             [JsonProperty("id")]
@@ -139,11 +164,11 @@ namespace Authentication.App.Challenge.Services.Users
             public string Email { get; set; }
 
             [JsonProperty("exp")]
-            public int Exp { get; set; }
+            public long Exp { get; set; }
         }
     }
 
-    public class AuthSuccess : ResultContentBase
+    public class AuthTokenSuccess : ResultContentBase
     {
         public string Token { get; set; }
         
@@ -155,6 +180,8 @@ namespace Authentication.App.Challenge.Services.Users
         Task<ResultBase> Login(string email, string password);
         
         Task<ResultBase> Register(string email, string password);
+        
+        Task<ResultBase> Logout(string token);
         
         AuthService.Payload Decode(string token);
     }

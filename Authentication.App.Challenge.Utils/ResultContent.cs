@@ -11,6 +11,11 @@
     {
     }
 
+    public class Info : ResultContentBase
+    {
+        public string Message { get; set; }
+    }
+    
     public class Error : ResultContentBase
     {
         public string Message { get; set; }
