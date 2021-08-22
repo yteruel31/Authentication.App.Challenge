@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Autofac" Version="6.0.0" />
+      <PackageReference Include="JWT" Version="8.2.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Authentication.App.Challenge.Models\Authentication.App.Challenge.Models.csproj" />
+      <ProjectReference Include="..\Authentication.App.Challenge.Repositories\Authentication.App.Challenge.Repositories.csproj" />
+      <ProjectReference Include="..\Authentication.App.Challenge.Utils\Authentication.App.Challenge.Utils.csproj" />
+    </ItemGroup>
+
+</Project>

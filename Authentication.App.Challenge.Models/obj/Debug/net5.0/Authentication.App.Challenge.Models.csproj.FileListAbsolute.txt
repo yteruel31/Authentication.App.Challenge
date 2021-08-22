@@ -1,0 +1,12 @@
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\bin\Debug\net5.0\Authentication.App.Challenge.Models.deps.json
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\bin\Debug\net5.0\Authentication.App.Challenge.Models.dll
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\bin\Debug\net5.0\ref\Authentication.App.Challenge.Models.dll
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\bin\Debug\net5.0\Authentication.App.Challenge.Models.pdb
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\obj\Debug\net5.0\Authentication.App.Challenge.Models.csproj.AssemblyReference.cache
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\obj\Debug\net5.0\Authentication.App.Challenge.Models.GeneratedMSBuildEditorConfig.editorconfig
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\obj\Debug\net5.0\Authentication.App.Challenge.Models.AssemblyInfoInputs.cache
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\obj\Debug\net5.0\Authentication.App.Challenge.Models.AssemblyInfo.cs
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\obj\Debug\net5.0\Authentication.App.Challenge.Models.csproj.CoreCompileInputs.cache
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\obj\Debug\net5.0\Authentication.App.Challenge.Models.dll
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\obj\Debug\net5.0\ref\Authentication.App.Challenge.Models.dll
+E:\GIT\Authentication.App.Challenge\Authentication.App.Challenge.Models\obj\Debug\net5.0\Authentication.App.Challenge.Models.pdb
